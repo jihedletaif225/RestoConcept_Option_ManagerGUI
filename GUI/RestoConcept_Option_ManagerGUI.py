@@ -1,6 +1,7 @@
 
 
 
+
 import sys
 import time
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -60,7 +61,7 @@ class PlaywrightWorker(QThread):
             page.goto("https://www.restoconcept.com/admin/logon.asp")
             page.fill("#adminuser", self.username)
             page.fill("#adminPass", self.password)
-            page.click('input[type="image"][src="logon_cnx.jpg"]')
+            page.click("#btn1")
             
             try:
                 page.wait_for_selector('td[align="center"][style="background-color:#eeeeee"]:has-text("© Copyright 2024 - Restoconcept")', timeout=5000)
@@ -78,7 +79,8 @@ class PlaywrightWorker(QThread):
             self.status_update.emit(f"Navigating to option group: {group_name}")
             page.goto("https://www.restoconcept.com/admin/options/optionsgroupslist.asp")
             page.fill("#psearch", group_name)
-            page.click('input[type="image"][name="Submit"]')
+            page.click('button:has-text("Rechercher")')
+
             page.wait_for_load_state("networkidle")
             
             if page.locator('img[alt=" Ajouter/retirer des options "]').count() == 0:
@@ -96,13 +98,13 @@ class PlaywrightWorker(QThread):
         try:
             self.status_update.emit(f"Adding option: {option_name}")
             page.fill('input[name="rch"]', option_name)
-            page.click('input[type="image"][src="/admin/rechercher.gif"]')
+            page.click('button:has-text("Rechercher")')
             page.wait_for_load_state("networkidle")
             
             checkbox = page.locator('input[type="checkbox"][name="inclure0"]')
             if checkbox.is_visible():
                 checkbox.check()
-                page.click('input[type="image"][src="maj.gif"]')
+                page.click("button:has-text('Mettre à jour')")
                 page.wait_for_load_state("networkidle")
                 return True
             else:

@@ -77,7 +77,7 @@ class OptionsUploaderThread(QThread):
         page.goto("https://www.restoconcept.com/admin/logon.asp")
         page.fill("#adminuser", self.username)
         page.fill("#adminPass", self.password)
-        page.click('input[type="image"][src="logon_cnx.jpg"]')
+        page.click("#btn1")
 
         try:
             page.wait_for_selector('td[align="center"][style="background-color:#eeeeee"]:has-text("© Copyright 2024 - Restoconcept")', timeout=5000)
@@ -97,7 +97,7 @@ class OptionsUploaderThread(QThread):
         page.select_option("#iddelai", str(row['iddelai']))
 
     def submit_option(self, page):
-        page.click('input[type="image"][src="ajouter.gif"]')
+        page.click('button:has-text("Ajouter")')
         page.wait_for_load_state("networkidle")
 
     def handle_submission_result(self, page):
