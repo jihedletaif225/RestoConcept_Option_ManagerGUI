@@ -4,7 +4,7 @@
 
 
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QFrame, QCheckBox, QProgressBar, QListWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QFrame, QCheckBox, QProgressBar
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
@@ -43,9 +43,12 @@ class AutomationWorker(QThread):
         page.goto("https://www.restoconcept.com/admin/logon.asp")
         page.fill("#adminuser", self.username)
         page.fill("#adminPass", self.password)
-        page.click('input[type="image"][src="logon_cnx.jpg"]')
+        page.click("#btn1")
         try:
-            page.wait_for_selector('td[align="center"][style="background-color:#eeeeee"]:has-text("© Copyright 2024 - Restoconcept")', timeout=5000)
+            page.wait_for_selector(
+                'td[align="center"][style="background-color:#eeeeee"]:has-text("© Copyright 2024 - Restoconcept")',
+                timeout=5000
+            )
             self.log_update.emit("Login successful.")
             self.progress_update.emit(40)
         except PlaywrightTimeoutError:
@@ -78,18 +81,11 @@ class AutomationWorker(QThread):
         page.select_option("select#idOptionGroup", label=self.group_name)
 
         self.log_update.emit(f"Clicking 'Add' button for product ID {product_id}")
-        page.click('input[type="image"][src="ajouter.gif"]')
+        page.click("button:has-text('Ajouter')")
 
         self.log_update.emit(f"Added product {product_id} to group {self.group_name}")
         self.progress_update.emit(100)
 
-
-import sys
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QFrame, QLabel, QLineEdit,
-    QCheckBox, QPushButton, QProgressBar, QTextEdit
-)
-from PyQt5.QtGui import QFont
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -157,9 +153,41 @@ class MainWindow(QMainWindow):
         layout.addWidget(input_field)
         return input_field
 
+    def get_product_ids(self):
+        # Split the input by commas and strip whitespace from each ID
+        return [id.strip() for id in self.products_id_input.text().split(",") if id.strip()]
+
     def start_automation(self):
-        # Add your automation logic here
-        pass
+        # Collect the necessary parameters for the automation
+        username = self.username_input.text()
+        password = self.password_input.text()
+        product_ids = self.get_product_ids()
+        group_name = self.group_name_input.text()
+        headless = self.headless_checkbox.isChecked()
+
+        # Create the AutomationWorker thread with the collected parameters
+        self.automation_worker = AutomationWorker(username, password, product_ids, group_name, headless)
+
+        # Connect signals for logging, progress updates, and when the process finishes
+        self.automation_worker.log_update.connect(self.log_message)
+        self.automation_worker.progress_update.connect(self.update_progress_bar)
+        self.automation_worker.finished.connect(self.on_automation_finished)
+
+        # Start the automation thread
+        self.automation_worker.start()
+
+    def log_message(self, message):
+        # Method to update the log display
+        self.log_output.append(message)
+
+    def update_progress_bar(self, value):
+        # Method to update the progress bar
+        self.progress_bar.setValue(value)
+
+    def on_automation_finished(self):
+        # Method to handle cleanup when automation finishes
+        self.log_message("Automation completed.")
+        self.progress_bar.setValue(100)
 
     def apply_styles(self):
         self.setStyleSheet("""
@@ -176,19 +204,13 @@ class MainWindow(QMainWindow):
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             QLabel {
-                /*color: #333333;
-                font-weight: bold;
-                margin-bottom: 5px;*/
-                 font-size: 13px;
-    line-height: 19px;
-    color: #111;
-    font-family: "Amazon Ember",Arial,sans-serif;
-    box-sizing: border-box;
-    display: block;
-    padding-left: 2px;
-    padding-bottom: 2px;
-    font-weight: 500;      
-
+                font-size: 13px;
+                line-height: 19px;
+                color: #111;
+                font-family: "Amazon Ember", Arial, sans-serif;
+                padding-left: 2px;
+                padding-bottom: 2px;
+                font-weight: 500;
             }
             QPushButton {
                 background-color: #3498db;
