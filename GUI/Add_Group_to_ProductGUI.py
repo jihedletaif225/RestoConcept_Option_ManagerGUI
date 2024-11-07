@@ -47,7 +47,7 @@ class AutomationWorker(QThread):
         try:
             page.wait_for_selector(
                 'td[align="center"][style="background-color:#eeeeee"]:has-text("© Copyright 2024 - Restoconcept")',
-                timeout=5000
+                timeout=3000
             )
             self.log_update.emit("Login successful.")
             self.progress_update.emit(40)
@@ -81,7 +81,7 @@ class AutomationWorker(QThread):
         page.select_option("select#idOptionGroup", label=self.group_name)
 
         self.log_update.emit(f"Clicking 'Add' button for product ID {product_id}")
-        page.click("button:has-text('Ajouter')")
+        page.click("button[type='submit'][style='font-family:arial; font-size:14px; cursor:pointer; background-color:#005c99; color:#fff; border:0; border-radius:3px; padding:3px 14px;']:has-text('Ajouter')")
 
         self.log_update.emit(f"Added product {product_id} to group {self.group_name}")
         self.progress_update.emit(100)
