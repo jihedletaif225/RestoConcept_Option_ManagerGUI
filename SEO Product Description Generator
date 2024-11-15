@@ -1,4 +1,5 @@
 
+
 import asyncio
 from playwright.async_api import async_playwright
 from dotenv import load_dotenv
@@ -15,7 +16,7 @@ if sys.platform == "win32":
 
 
 # Load environment variables
-load_dotenv()
+# load_dotenv()
 
 # LangChain Model Configuration
 parser = StrOutputParser()
@@ -54,6 +55,41 @@ async def generate_seo_description(product_info):
     prompt = """
 Vous êtes un expert en rédaction spécialisé dans la création de descriptions de produits détaillées et optimisées pour le référencement des sites e-commerce. Votre tâche est de transformer une brève description de produit en une description complète, engageante et optimisée pour les moteurs de recherche, entièrement en français.
 
+## Méthodologie :
+
+1. **Commencez une réflexion approfondie (<Réflexion>):**  
+   - Rassemblez toutes vos idées dans la balise <Réflexion>. Explorez le problème sous tous les angles et approches possibles avec concentration et précision. Utilisez toutes vos capacités intellectuelles pour analyser les données et les exigences avec une extrême rigueur. Souvenez-vous que certaines questions peuvent être trompeuses et que certaines solutions, bien qu'elles paraissent correctes, ne le sont pas forcément. Ne vous précipitez pas et réfléchissez à nouveau avant de passer à l’étape suivante.
+
+2. **Divisez la solution en étapes claires (<Étape>):**  
+   - Divisez la solution en étapes claires et séquentielles dans la balise <Étape>. Commencez avec un budget de *20 étapes* et assurez-vous d’utiliser chaque étape efficacement pour progresser vers la solution.
+
+3. **Suivez précisément le budget (<Nombre>):**  
+   - Après chaque étape, utilisez la balise <Nombre> pour indiquer le nombre d’étapes restantes. Arrêtez-vous complètement lorsque vous atteignez *0*.
+
+4. **Ajustez continuellement le raisonnement :**  
+   - Adaptez constamment votre logique en fonction des résultats intermédiaires et des réflexions. N’hésitez pas à améliorer votre stratégie pour atteindre les meilleurs résultats.
+
+5. **Évaluez et réfléchissez régulièrement (<Réflexion>):**  
+   - Évaluez vos progrès régulièrement en utilisant la balise <Réflexion>. Soyez rigoureux et honnête dans la critique de votre processus de pensée. Déterminez précisément si l'approche actuelle est efficace ou nécessite une modification.
+
+6. **Attribuez une note de qualité précise (<Récompense>):**  
+   - Après chaque réflexion, attribuez une note de qualité entre *0,0* et *1,0* en utilisant la balise <Récompense> pour orienter votre démarche :
+     - *0,8 ou plus* : Poursuivez avec confiance dans l’approche actuelle.
+     - *Entre 0,5 et 0,7* : Effectuez immédiatement des ajustements mineurs.
+     - *Moins de 0,5* : Revenez immédiatement en arrière et adoptez une approche différente.
+
+7. **Recherchez des solutions créatives (<Créativité>):**  
+   - Si vous n’êtes pas sûr ou si la note de qualité est faible, utilisez toutes vos capacités créatives pour réfléchir à une nouvelle approche. Revenez à la balise <Réflexion> pour explorer d’autres pistes et commencez à les appliquer sans hésitation.
+
+8. **Vérifiez la validité de la solution (<Vérification>):**  
+   - Une fois un résultat atteint, utilisez la balise <Vérification> pour valider la solution. Effectuez des vérifications croisées et des raisonnements inverses pour garantir une conformité totale avec les données.
+
+9. **Confirmez la solution finale (<Confirmation>):**  
+   - Avant de soumettre la réponse finale, utilisez la balise <Confirmation> pour vous assurer de manière définitive que la solution est correcte et fonctionne comme prévu. Ne présentez la réponse finale que si vous êtes absolument certain de sa validité.
+
+10. **Présentez la réponse finale avec clarté (<Réponse>):**  
+    - Fournissez la réponse finale dans la balise <Réponse>. Assurez-vous qu’elle soit claire, concise et exempte d’ambiguïtés, tout en offrant un résumé précis de la solution.
+
 ## Entrée :
 Vous recevrez une courte description de produit comprenant des spécifications de base et des détails techniques.
 
@@ -83,6 +119,7 @@ Rappelez-vous de maintenir l'exactitude tout en développant les informations fo
 Product Information:
 {product_info}
 """
+
     seo_description = await llm.ainvoke(prompt.format(product_info=product_info))
     return add_line_breaks(seo_description).replace('*', '')
 
