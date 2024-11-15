@@ -1,0 +1,135 @@
+
+import asyncio
+from playwright.async_api import async_playwright
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+from langchain_core.output_parsers import StrOutputParser
+from openpyxl import Workbook
+import streamlit as st
+
+import asyncio
+import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+
+# Load environment variables
+load_dotenv()
+
+# LangChain Model Configuration
+parser = StrOutputParser()
+key = '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'
+Model = "llama3-groq-70b-8192-tool-use-preview"
+model = ChatGroq(api_key=key, model=Model, temperature=0.9)
+llm = model | parser
+
+# Function to scrape data from each product page
+async def scrape_data(url):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto(url)
+        
+        description = await page.text_content('h1#description')
+        sku_ref = await page.text_content('div#sku')
+        sku_ref = sku_ref.replace('Ref :', '').strip()
+        descl = await page.inner_html('h2#descl')
+        descl_lines = [line.strip() for line in descl.split('<br>')]
+        
+        combined_info = f"Description: {description}\n"
+        combined_info += f"SKU Reference: {sku_ref}\n"
+        combined_info += "Detailed Specifications:\n"
+        for line in descl_lines:
+            combined_info += f"{line}\n"
+
+        await browser.close()
+        return combined_info, sku_ref
+
+def add_line_breaks(seo_description):
+    lines = seo_description.split('\n')
+    return '<br>'.join([line.strip() for line in lines if line.strip()])
+
+async def generate_seo_description(product_info):
+    prompt = """
+Vous êtes un expert en rédaction spécialisé dans la création de descriptions de produits détaillées et optimisées pour le référencement des sites e-commerce. Votre tâche est de transformer une brève description de produit en une description complète, engageante et optimisée pour les moteurs de recherche, entièrement en français.
+
+## Entrée :
+Vous recevrez une courte description de produit comprenant des spécifications de base et des détails techniques.
+
+## Sortie :
+Générez une description de produit complète avec les caractéristiques suivantes :
+
+1. Commencez par une section captivante qui met en avant les principales caractéristiques et avantages du produit.
+2. Organisez les informations en sections claires et faciles à lire avec des titres descriptifs.
+3. Développez chaque spécification technique, en expliquant son importance et ses avantages pour l'utilisateur.
+4. Utilisez des puces pour les caractéristiques et spécifications clés afin d'améliorer la lisibilité.
+5. Incorporez naturellement des mots-clés pertinents tout au long du texte, en vous concentrant sur le nom du produit, la marque et les caractéristiques principales.
+6. Incluez une section sur les applications potentielles ou les cas d'utilisation du produit.
+7. Ajoutez une brève comparaison avec des produits similaires ou des modèles précédents, en soulignant les points de vente uniques.
+8. Concluez par un appel à l'action encourageant le lecteur à acheter ou à en savoir plus.
+9. Assurez-vous que la description fait entre 300 et 500 mots pour une performance SEO optimale.
+10. Utilisez un ton professionnel mais engageant qui plaît à la fois aux experts techniques et aux consommateurs généraux.
+
+## Mise en forme :
+1. Le titre principal doit être dans une balise <h2>, centré, avec deux sauts de ligne avant et après, ainsi : `<br><h2 style="text-align: center;">Titre du Produit</h2><br>`.
+2. Chaque sous-titre doit être dans une balise <h3>, avec un saut de ligne avant et après, et aligné au début de la ligne (non centré).
+3. Dans la section "Caractéristiques techniques," conservez exactement le format fourni dans {product_info} sans modification.
+
+N'incluez PAS de suggestions de méta-description ou de balise de titre à la fin.
+
+Rappelez-vous de maintenir l'exactitude tout en développant les informations fournies. N'inventez pas de caractéristiques ou de spécifications non mentionnées dans la description originale.
+
+Product Information:
+{product_info}
+"""
+    seo_description = await llm.ainvoke(prompt.format(product_info=product_info))
+    return add_line_breaks(seo_description).replace('*', '')
+
+def save_to_excel(data_list):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "SEO Descriptions"
+    ws.append(["Product ID", "Reference Code", "SEO-Optimized Description"])
+    for product_id, ref_code, seo_description in data_list:
+        ws.append([product_id, ref_code, seo_description])
+    file_path = "seo_descriptions.xlsx"
+    wb.save(file_path)
+    return file_path
+
+# Streamlit UI
+st.set_page_config(page_title="SEO Product Description Generator", layout="centered")
+
+st.title("SEO Product Description Generator")
+st.markdown("### Automate and optimize your product descriptions with ease!")
+
+# Input Section
+base_url = st.text_input("Enter the base product URL", value="https://www.restoconcept.com/four-a-vapeur-8-bouches-2x760-mm-profondeur-utile-2345-mm-af0fst24v75-2400-pavailler/p{}.aspx")
+choice = st.radio("Select the input method:", ("Range of IDs", "Specific IDs"))
+
+seo_data = []
+
+if choice == "Range of IDs":
+    start_id = st.number_input("Start ID", min_value=1, step=1)
+    end_id = st.number_input("End ID", min_value=start_id, step=1)
+    ids = range(start_id, end_id + 1)
+elif choice == "Specific IDs":
+    id_input = st.text_input("Enter comma-separated IDs")
+    ids = [int(id.strip()) for id in id_input.split(",")] if id_input else []
+
+# Generate and Export
+if st.button("Generate Descriptions"):
+    if ids:
+        async def process_ids():
+            for product_id in ids:
+                url = base_url.format(product_id)
+                product_info, ref_code = await scrape_data(url)
+                seo_description = await generate_seo_description(product_info)
+                seo_data.append((product_id, ref_code, seo_description))
+            file_path = save_to_excel(seo_data)
+            st.success(f"SEO Descriptions saved to {file_path}")
+            st.download_button("Download Excel File", file_path, file_name="seo_descriptions.xlsx")
+
+        asyncio.run(process_ids())
+    else:
+        st.warning("Please enter valid IDs!")
