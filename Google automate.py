@@ -1,4 +1,5 @@
 
+
 import random
 import time
 import pandas as pd
@@ -6,10 +7,15 @@ import tkinter as tk
 from tkinter import filedialog
 from playwright.sync_api import sync_playwright
 
-def random_delay():
-    delay = random.randint(1, 3)
+def random_delay(time_delay = None):
+    if time_delay is None:
+        delay = random.randint(1, 3)
+    else:
+        delay = time_delay
+    
     time.sleep(delay)
     return delay
+
 
 # Define country-specific settings
 COUNTRIES = [
@@ -49,10 +55,15 @@ def search_and_click(keyword, country):
         # Wait for results to load
         page.wait_for_selector("h3")
         links = page.query_selector_all('a:has(h3)')
-        
-        # Open first 5 links
+
+        print("Number of links:", len(links))
+
+        random_delay(5)        
+
         # for i, link in enumerate(links):
         for i, link in enumerate(links[:2]):
+          if not link.query_selector('span:has-text("Restoconcept")'):
+
             href = link.get_attribute('href')
             if href:
                 print(f"Opening link {i + 1} in {country['name']}: {href}")
@@ -83,8 +94,8 @@ if __name__ == "__main__":
         df = pd.read_excel(excel_file)
         
         # Assuming the Excel file has a column named 'Keywords'
-        keywords = df['Keywords'].dropna().tolist()
         # keywords = df['A'].dropna().tolist()
+        keywords = df.iloc[0:, 0].dropna().tolist()
 
         
         for keyword in keywords:
