@@ -116,8 +116,8 @@ def select_excel_file() -> str:
 if __name__ == "__main__":
     excel_file_path = select_excel_file()
     admin = RestoconceptAdmin(
-        username="letaief",
-        password="mohamed jihe",
+        username="",
+        password="",
         excel_file=excel_file_path
     )
     asyncio.run(admin.run())
