@@ -233,8 +233,8 @@ def main():
         return
 
     # Credentials
-    USERNAME = "letaief"
-    PASSWORD = "mohamed jihe"
+    USERNAME = ""
+    PASSWORD = ""
     
     # Create and run admin tool
     admin_tool = RestoconceptAdmin(USERNAME, PASSWORD, excel_file)
